@@ -7,3 +7,8 @@ services:
     # Раскомментируйте если нужны переменные окружения из файла
     env_file:
       - .env
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4

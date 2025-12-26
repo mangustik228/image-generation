@@ -7,6 +7,7 @@ class _Telegram(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="TELEGRAM_")
     bot_token: str
     authorized_users: list[int]
+    proxy_url: str | None = None
 
 
 class _GEMINI(BaseSettings):
