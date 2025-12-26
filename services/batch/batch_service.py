@@ -16,6 +16,13 @@ from sqlalchemy.orm import Session
 
 from models.models import BatchJob, BatchJobImage, get_session_maker, init_db
 
+
+BASE_PROMPT = (
+    "Фотографии должны выглядеть будто сфотографировано профессиональным фотографом с качественным светом на профессиональном оборудовании."
+    "На фотографии реальный объект, искажать геометрию нельзя."
+    "Изображение будет использоваться для каталога мебели на сайте производителе нестандартной офисной мебели."
+)
+
 # Возможные статусы batch job
 JOB_STATES = {
     "JOB_STATE_UNSPECIFIED": "Не определён",
@@ -111,14 +118,14 @@ class BatchService:
             for i, (uploaded_file, task) in enumerate(uploaded_files):
                 request_key = f"{batch_key}-{i}"
                 request_keys.append(request_key)
-                logger.debug(f"[{request_key}] Prompt: {task.custom_prompt}")
+                logger.debug(f"[{request_key}] Prompt: {task.custom_prompt + BASE_PROMPT}")
                 request_data = {
                     "key": request_key,
                     "request": {
                         "contents": [
                             {
                                 "parts": [
-                                    {"text": task.custom_prompt},
+                                    {"text": task.custom_prompt + " " + BASE_PROMPT},
                                     {
                                         "file_data": {
                                             "file_uri": uploaded_file.uri,
@@ -197,7 +204,7 @@ class BatchService:
                     order_number=task.order_number,
                     position=task.position,
                     page_url=task.page_url,
-                    prompt=task.custom_prompt,
+                    prompt=task.custom_prompt + " " + BASE_PROMPT,
                 )
                 session.add(image_record)
 
