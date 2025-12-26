@@ -1,0 +1,19 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+batch_jobs.db
+image.png
+
+
+# Virtual environments
+.venv
+.env 
+credentials.json
+auth_credentials.json
+token.json
+data 
+

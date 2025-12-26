@@ -1,0 +1,9 @@
+services:
+  telegram-bot:
+    build: .
+    container_name: telegram-image-bot
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Раскомментируйте если нужны переменные окружения из файла
+    env_file:
+      - .env
