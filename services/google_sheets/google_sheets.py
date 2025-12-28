@@ -147,7 +147,7 @@ class GoogleSheetsService:
         worksheet = self.spreadsheet.worksheet(self.IMAGES_SHEET)
         all_values = worksheet.get_all_values()
 
-        excluded_statuses = {"Готово", "И так классно", "Вручную"}
+        excluded_statuses = {"готово", "и так классно", "вручную", "пауза"}
         records: list[ImageRecord] = []
 
         for row in all_values[1:]:
@@ -157,7 +157,7 @@ class GoogleSheetsService:
             status = row[3].strip()
             custom_prompt = row[5].strip()
 
-            if status in excluded_statuses:
+            if status.lowercase() in excluded_statuses:
                 continue
             if not custom_prompt:
                 continue
