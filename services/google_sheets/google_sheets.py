@@ -157,7 +157,7 @@ class GoogleSheetsService:
             status = row[3].strip()
             custom_prompt = row[5].strip()
 
-            if status.lowercase() in excluded_statuses:
+            if status.lower() in excluded_statuses:
                 continue
             if not custom_prompt:
                 continue
