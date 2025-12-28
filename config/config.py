@@ -1,5 +1,3 @@
-from email.charset import BASE64
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,7 +23,7 @@ class _GOOGLE(BaseSettings):
 
 class _Database(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DATABASE_")
-    url: str = "sqlite:///./batch_jobs.db"
+    url: str = "sqlite:///./data/batch_jobs.db"
 
 
 class _Gateway(BaseSettings):
