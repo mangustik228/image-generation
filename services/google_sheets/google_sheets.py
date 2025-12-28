@@ -147,7 +147,7 @@ class GoogleSheetsService:
         worksheet = self.spreadsheet.worksheet(self.IMAGES_SHEET)
         all_values = worksheet.get_all_values()
 
-        excluded_statuses = {"Готово", "И так классно"}
+        excluded_statuses = {"Готово", "И так классно", "Вручную"}
         records: list[ImageRecord] = []
 
         for row in all_values[1:]:
