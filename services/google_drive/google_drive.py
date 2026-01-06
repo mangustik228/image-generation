@@ -163,22 +163,43 @@ class GoogleDriveService:
 
     def check_file_exists(self, file_id: str) -> bool:
         """
-        Check if a file exists and is not trashed.
+        Check if a file exists in the target folder and is not trashed.
 
         Args:
             file_id: Google Drive file ID
 
         Returns:
-            True if file exists, False otherwise
+            True if file exists in target folder, False otherwise
         """
         try:
             file = (
                 self.service.files()
-                .get(fileId=file_id, fields="id, trashed", supportsAllDrives=True)
+                .get(
+                    fileId=file_id,
+                    fields="id, name, trashed, parents",
+                    supportsAllDrives=True,
+                )
                 .execute()
             )
-            return not file.get("trashed", False)
-        except Exception:
+            is_trashed = file.get("trashed", False)
+            parents = file.get("parents", [])
+            file_name = file.get("name", "unknown")
+
+            if is_trashed:
+                logger.debug(f"Файл {file_id} ({file_name}) в корзине")
+                return False
+
+            if self.folder_id not in parents:
+                logger.warning(
+                    f"Файл {file_id} ({file_name}) не в целевой папке. "
+                    f"Ожидается: {self.folder_id}, фактически: {parents}"
+                )
+                return False
+
+            logger.debug(f"Файл {file_id} ({file_name}) найден в целевой папке")
+            return True
+        except Exception as e:
+            logger.debug(f"Файл {file_id} не найден: {e}")
             return False
 
     def download_file(self, file_id: str) -> Optional[bytes]:
