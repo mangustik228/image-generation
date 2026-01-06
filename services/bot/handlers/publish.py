@@ -195,8 +195,8 @@ async def handle_publish_images(message: Message) -> None:
                                 image_data=photo_bytes,
                                 filename=img.get_cms_filename(),
                                 title=img.title or "Изображение без названия",
-                                description=img.description,
-                                caption=img.alt,
+                                description=img.alt,
+                                caption=img.description,
                                 collection_path=img.get_collection_path(),
                             )
 
