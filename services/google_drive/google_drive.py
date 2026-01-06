@@ -189,10 +189,11 @@ class GoogleDriveService:
                 logger.debug(f"Файл {file_id} ({file_name}) в корзине")
                 return False
 
+            # Проверяем что файл в целевой папке (generated)
+            # Файлы перемещённые из папки попадают в корень Shared Drive
             if self.folder_id not in parents:
-                logger.warning(
-                    f"Файл {file_id} ({file_name}) не в целевой папке. "
-                    f"Ожидается: {self.folder_id}, фактически: {parents}"
+                logger.debug(
+                    f"Файл {file_id} ({file_name}) не в целевой папке, пропускаем"
                 )
                 return False
 
