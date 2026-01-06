@@ -16,7 +16,6 @@ from sqlalchemy.orm import Session
 
 from models.models import BatchJob, BatchJobImage, get_session_maker, init_db
 
-
 BASE_PROMPT = (
     "Фотографии должны выглядеть будто сфотографировано профессиональным фотографом с качественным светом на профессиональном оборудовании."
     "На фотографии реальный объект, искажать геометрию нельзя."
@@ -118,7 +117,9 @@ class BatchService:
             for i, (uploaded_file, task) in enumerate(uploaded_files):
                 request_key = f"{batch_key}-{i}"
                 request_keys.append(request_key)
-                logger.debug(f"[{request_key}] Prompt: {task.custom_prompt + ". " BASE_PROMPT}")
+                logger.debug(
+                    f"[{request_key}] Prompt: {task.custom_prompt + '. ' + BASE_PROMPT}"
+                )
                 request_data = {
                     "key": request_key,
                     "request": {
