@@ -101,7 +101,8 @@ async def handle_publish_images(message: Message) -> None:
                             )
                             continue
                         logger.info(
-                            f"Загружаем файл: id={img.id}, model={img.model_name}, file_id={img.result_file}"
+                            f"Загружаем файл: model={img.model_name}, source={img.source_image_name}, "
+                            f"original_path={img.original_image_path}"
                         )
                         photo_bytes = drive_service.download_file(img.result_file)
                         if photo_bytes:
