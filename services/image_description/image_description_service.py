@@ -73,6 +73,7 @@ class ImageDescriptionService:
         self,
         photos: list[bytes],
         markdown_content: str,
+        filenames: list[str] | None = None,
     ) -> list[dict[str, str]]:
         """
         Генерация описаний для изображений товара.
@@ -80,6 +81,7 @@ class ImageDescriptionService:
         Args:
             photos: Список байтов изображений
             markdown_content: Markdown с характеристиками и описанием товара
+            filenames: Список имён файлов для логирования
 
         Returns:
             list: Список словарей с title, alt, caption для каждого изображения
@@ -95,8 +97,13 @@ class ImageDescriptionService:
             # Подготавливаем изображения
             contents: list[types.Part] = []
 
-            for photo_bytes in photos:
-                resized_photo = self._resize_image_for_api(photo_bytes)
+            for i, photo_bytes in enumerate(photos):
+                filename = (
+                    filenames[i] if filenames and i < len(filenames) else f"image_{i}"
+                )
+                resized_photo = self._resize_image_for_api(
+                    photo_bytes, filename=filename
+                )
                 contents.append(
                     types.Part.from_bytes(
                         data=resized_photo,
@@ -135,7 +142,11 @@ class ImageDescriptionService:
             raise
 
     def _resize_image_for_api(
-        self, image_bytes: bytes, max_size: int = 1024, max_bytes: int = 800_000
+        self,
+        image_bytes: bytes,
+        max_size: int = 1024,
+        max_bytes: int = 800_000,
+        filename: str = "unknown",
     ) -> bytes:
         """
         Уменьшает изображение для отправки в API с гарантией размера < 800KB.
@@ -144,13 +155,14 @@ class ImageDescriptionService:
             image_bytes: Исходные байты изображения
             max_size: Максимальный размер по большей стороне
             max_bytes: Максимальный размер в байтах
+            filename: Имя файла для логирования
 
         Returns:
             bytes: Байты уменьшенного изображения
         """
         try:
             original_size = len(image_bytes)
-            logger.debug(f"Исходный размер изображения: {original_size / 1024:.2f} KB")
+            logger.debug(f"[{filename}] Исходный размер: {original_size / 1024:.2f} KB")
 
             image = Image.open(io.BytesIO(image_bytes))
 
@@ -181,7 +193,7 @@ class ImageDescriptionService:
 
                 if len(result_bytes) <= max_bytes:
                     logger.debug(
-                        f"Изображение сжато: {original_width}x{original_height} -> {width}x{height}, "
+                        f"[{filename}] Сжато: {original_width}x{original_height} -> {width}x{height}, "
                         f"{original_size / 1024:.2f}KB -> {len(result_bytes) / 1024:.2f}KB (quality={quality})"
                     )
                     return result_bytes

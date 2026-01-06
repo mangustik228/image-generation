@@ -89,6 +89,7 @@ async def handle_publish_images(message: Message) -> None:
 
                     photos: list[bytes] = []
                     image_ids: list[str] = []
+                    filenames: list[str] = []
 
                     for img in images_without_desc:
                         if not img.result_file:
@@ -96,13 +97,17 @@ async def handle_publish_images(message: Message) -> None:
                         # Проверяем, существует ли файл на Google Drive
                         if not drive_service.check_file_exists(img.result_file):
                             logger.warning(
-                                f"Файл {img.result_file} не найден на Google Drive, пропускаем"
+                                f"Файл {img.result_file} (id={img.id}, model={img.model_name}) не найден на Google Drive, пропускаем"
                             )
                             continue
+                        logger.info(
+                            f"Загружаем файл: id={img.id}, model={img.model_name}, file_id={img.result_file}"
+                        )
                         photo_bytes = drive_service.download_file(img.result_file)
                         if photo_bytes:
                             photos.append(photo_bytes)
                             image_ids.append(img.id)
+                            filenames.append(f"{img.model_name}_{img.id}")
 
                     if not photos:
                         continue
@@ -111,6 +116,7 @@ async def handle_publish_images(message: Message) -> None:
                         descriptions = await image_desc_service.generate_descriptions(
                             photos=photos,
                             markdown_content=markdown,
+                            filenames=filenames,
                         )
 
                         for i, desc in enumerate(descriptions):
