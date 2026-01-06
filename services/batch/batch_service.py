@@ -118,14 +118,14 @@ class BatchService:
             for i, (uploaded_file, task) in enumerate(uploaded_files):
                 request_key = f"{batch_key}-{i}"
                 request_keys.append(request_key)
-                logger.debug(f"[{request_key}] Prompt: {task.custom_prompt + BASE_PROMPT}")
+                logger.debug(f"[{request_key}] Prompt: {task.custom_prompt + ". " BASE_PROMPT}")
                 request_data = {
                     "key": request_key,
                     "request": {
                         "contents": [
                             {
                                 "parts": [
-                                    {"text": task.custom_prompt + " " + BASE_PROMPT},
+                                    {"text": task.custom_prompt + ". " + BASE_PROMPT},
                                     {
                                         "file_data": {
                                             "file_uri": uploaded_file.uri,
@@ -204,7 +204,7 @@ class BatchService:
                     order_number=task.order_number,
                     position=task.position,
                     page_url=task.page_url,
-                    prompt=task.custom_prompt + " " + BASE_PROMPT,
+                    prompt=task.custom_prompt + ". " + BASE_PROMPT,
                 )
                 session.add(image_record)
 

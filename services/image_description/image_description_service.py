@@ -4,6 +4,7 @@
 
 import io
 import json
+import re
 from typing import Any
 
 from google import genai
@@ -224,29 +225,57 @@ class ImageDescriptionService:
             dict: Распарсенные данные
         """
         try:
+            # Убираем markdown-разметку ```json ... ```
+            cleaned_text = response_text.strip()
+            if cleaned_text.startswith("```"):
+                # Убираем первую строку с ```json или ```
+                lines = cleaned_text.split("\n")
+                # Убираем первую и последнюю строки с ```
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].strip() == "```":
+                    lines = lines[:-1]
+                cleaned_text = "\n".join(lines)
+
             # Ищем JSON в ответе
-            start_idx = response_text.find("{")
-            end_idx = response_text.rfind("}")
+            start_idx = cleaned_text.find("{")
+            end_idx = cleaned_text.rfind("}")
 
             if start_idx == -1 or end_idx == -1:
                 logger.warning("JSON не найден в ответе")
+                logger.debug(f"Ответ: {response_text[:500]}...")
                 return {
                     "raw_response": response_text,
                     "parsing_error": "JSON structure not found in response",
                 }
 
-            json_str = response_text[start_idx : end_idx + 1]
-            result = json.loads(json_str)
+            json_str = cleaned_text[start_idx : end_idx + 1]
 
-            logger.debug("JSON успешно распарсен")
-            return result
+            # Пробуем распарсить как есть
+            try:
+                result = json.loads(json_str)
+                logger.debug("JSON успешно распарсен")
+                return result
+            except json.JSONDecodeError:
+                pass
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Ошибка парсинга JSON: {e}")
-            return {
-                "raw_response": response_text,
-                "parsing_error": f"JSON decode error: {e}",
-            }
+            # Пробуем исправить типичные проблемы
+            # 1. Заменяем неэкранированные переносы строк внутри строк
+            # 2. Убираем trailing commas
+            fixed_json = re.sub(r",\s*([}\]])", r"\1", json_str)
+
+            try:
+                result = json.loads(fixed_json)
+                logger.debug("JSON успешно распарсен после исправления")
+                return result
+            except json.JSONDecodeError as e:
+                logger.error(f"Ошибка парсинга JSON: {e}")
+                logger.debug(f"JSON строка: {json_str[:1000]}...")
+                return {
+                    "raw_response": response_text,
+                    "parsing_error": f"JSON decode error: {e}",
+                }
+
         except Exception as e:
             logger.error(f"Неожиданная ошибка при парсинге ответа: {e}")
             return {

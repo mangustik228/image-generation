@@ -37,7 +37,11 @@ def authenticate():
             flow = InstalledAppFlow.from_client_secrets_file(
                 OAUTH_CREDENTIALS_FILE, SCOPES
             )
-            creds = flow.run_local_server(port=0)
+            # Используем консольный режим, если браузер недоступен
+            try:
+                creds = flow.run_local_server(port=0, open_browser=False)
+            except Exception:
+                creds = flow.run_console()
 
         # Сохраняем токен
         with open(TOKEN_FILE, "w") as token:

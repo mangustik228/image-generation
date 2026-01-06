@@ -23,9 +23,7 @@ async def handle_publish_images(message: Message) -> None:
         return
 
     if publish_lock.locked():
-        await message.answer(
-            "⏳ Публикация уже запущена. Подождите завершения."
-        )
+        await message.answer("⏳ Публикация уже запущена. Подождите завершения.")
         return
 
     async with publish_lock:
@@ -49,7 +47,9 @@ async def handle_publish_images(message: Message) -> None:
             await message.answer("🔄 Синхронизация с Gateway...")
             result = await sync_service.sync_files(drive_service, check_deleted=True)
 
-            logger.info(f"Синхронизация: {result.requests_success} успешных, {result.requests_failed} ошибок")
+            logger.info(
+                f"Синхронизация: {result.requests_success} успешных, {result.requests_failed} ошибок"
+            )
 
             # Генерируем описания для изображений каждой модели
             descriptions_generated = 0
@@ -70,7 +70,8 @@ async def handle_publish_images(message: Message) -> None:
                     )
 
                     model_images = [
-                        img for img in images
+                        img
+                        for img in images
                         if slugify(img.model_name, lowercase=True) == model_slug
                     ]
 
@@ -78,7 +79,8 @@ async def handle_publish_images(message: Message) -> None:
                         continue
 
                     images_without_desc = [
-                        img for img in model_images
+                        img
+                        for img in model_images
                         if not (img.title and img.description)
                     ]
 
@@ -90,6 +92,12 @@ async def handle_publish_images(message: Message) -> None:
 
                     for img in images_without_desc:
                         if not img.result_file:
+                            continue
+                        # Проверяем, существует ли файл на Google Drive
+                        if not drive_service.check_file_exists(img.result_file):
+                            logger.warning(
+                                f"Файл {img.result_file} не найден на Google Drive, пропускаем"
+                            )
                             continue
                         photo_bytes = drive_service.download_file(img.result_file)
                         if photo_bytes:
@@ -109,7 +117,11 @@ async def handle_publish_images(message: Message) -> None:
                             if i >= len(image_ids):
                                 break
                             image_id = image_ids[i]
-                            img_record = session.query(BatchJobImage).filter_by(id=image_id).first()
+                            img_record = (
+                                session.query(BatchJobImage)
+                                .filter_by(id=image_id)
+                                .first()
+                            )
                             if img_record:
                                 img_record.alt = desc.get("alt", "")
                                 img_record.title = desc.get("title", "")
@@ -124,7 +136,9 @@ async def handle_publish_images(message: Message) -> None:
                         continue
 
             if descriptions_generated > 0:
-                await message.answer(f"🏷️ Сгенерировано {descriptions_generated} описаний")
+                await message.answer(
+                    f"🏷️ Сгенерировано {descriptions_generated} описаний"
+                )
 
             # ===== ШАГ 2: Публикация изображений =====
             gateway_client = GatewayClient()
@@ -164,7 +178,9 @@ async def handle_publish_images(message: Message) -> None:
                                 continue
                             photo_bytes = drive_service.download_file(img.result_file)
                             if not photo_bytes:
-                                logger.warning(f"Не удалось скачать файл {img.result_file}")
+                                logger.warning(
+                                    f"Не удалось скачать файл {img.result_file}"
+                                )
                                 error_count += 1
                                 continue
 
