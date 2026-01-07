@@ -19,17 +19,27 @@ def format_stats(stats: ParseStats, added_count: int) -> str:
 
 def format_status_result(result: StatusCheckResult) -> str:
     """Форматирует результат проверки статусов."""
-    total_active = result.jobs_pending + result.jobs_running
-
-    if total_active == 0:
-        return "✅ Нет активных заданий в очереди"
-
     lines = [
-        "📊 *Статус обработки:*",
-        f"⏳ Изображений в очереди/выполняются: *{result.total_images}* шт.",
+        "📊 *Статистика обработки:*",
         "",
-        f"├ Batch jobs в очереди: {result.jobs_pending}",
-        f"└ Batch jobs выполняются: {result.jobs_running}",
+        "*Batch Jobs:*",
+        f"├ Всего: {result.total_jobs}",
+        f"├ ✅ Успешно: {result.jobs_succeeded}",
+        f"├ ⏳ В очереди: {result.jobs_pending}",
+        f"├ 🔄 Выполняются: {result.jobs_running}",
+        f"├ ❌ Ошибки: {result.jobs_failed}",
+        f"└ 🚫 Отменены: {result.jobs_cancelled}",
+        "",
+        f"⏳ Изображений в очереди/выполняются: *{result.images_pending}* шт.",
     ]
+
+    if result.errors_grouped:
+        lines.append("")
+        lines.append("*Группировка ошибок:*")
+        for error, count in sorted(result.errors_grouped.items(), key=lambda x: -x[1])[
+            :10
+        ]:
+            error_short = error[:80] + "..." if len(error) > 80 else error
+            lines.append(f"• {error_short}: {count}")
 
     return "\n".join(lines)

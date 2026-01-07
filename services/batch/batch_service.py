@@ -685,7 +685,7 @@ class BatchService:
 
     def get_overall_statistics(self) -> StatusCheckResult:
         """
-        Получает статистику по активным batch jobs (PENDING/RUNNING) и их изображениям.
+        Получает общую статистику по всем batch jobs и изображениям.
 
         Returns:
             StatusCheckResult со статистикой
@@ -693,30 +693,31 @@ class BatchService:
         result = StatusCheckResult()
 
         with self._get_session() as session:
-            # Считаем только активные jobs (PENDING и RUNNING)
-            active_jobs = (
-                session.query(BatchJob)
-                .filter(BatchJob.status.in_(["PENDING", "RUNNING"]))
-                .all()
-            )
-            result.total_jobs = len(active_jobs)
+            all_jobs = session.query(BatchJob).all()
+            result.total_jobs = len(all_jobs)
 
             active_job_ids = []
-            for job in active_jobs:
-                active_job_ids.append(job.id)
+            for job in all_jobs:
                 if job.status == "PENDING":
                     result.jobs_pending += 1
+                    active_job_ids.append(job.id)
                 elif job.status == "RUNNING":
                     result.jobs_running += 1
+                    active_job_ids.append(job.id)
+                elif job.status == "SUCCEEDED":
+                    result.jobs_succeeded += 1
+                elif job.status == "FAILED":
+                    result.jobs_failed += 1
+                elif job.status == "CANCELLED":
+                    result.jobs_cancelled += 1
 
-            # Считаем изображения только из активных jobs
+            # Считаем изображения только из активных jobs (PENDING/RUNNING)
             if active_job_ids:
                 active_images = (
                     session.query(BatchJobImage)
                     .filter(BatchJobImage.batch_job_id.in_(active_job_ids))
                     .all()
                 )
-                result.total_images = len(active_images)
                 result.images_pending = len(active_images)
 
         return result

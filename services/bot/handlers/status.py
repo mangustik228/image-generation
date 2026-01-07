@@ -21,9 +21,7 @@ async def handle_check_status(message: Message) -> None:
         return
 
     if status_check_lock.locked():
-        await message.answer(
-            "⏳ Проверка статусов уже запущена. Подождите завершения."
-        )
+        await message.answer("⏳ Проверка статусов уже запущена. Подождите завершения.")
         return
 
     async with status_check_lock:
