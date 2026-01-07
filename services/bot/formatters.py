@@ -17,7 +17,7 @@ def format_stats(stats: ParseStats, added_count: int) -> str:
     return "\n".join(lines)
 
 
-def format_status_result(result: StatusCheckResult) -> str:
+def format_status_result(result: StatusCheckResult, show_current: bool = False) -> str:
     """Форматирует результат проверки статусов."""
     lines = [
         "📊 *Статистика обработки:*",
@@ -32,6 +32,14 @@ def format_status_result(result: StatusCheckResult) -> str:
         "",
         f"⏳ Изображений в очереди/выполняются: *{result.images_pending}* шт.",
     ]
+
+    if show_current and (
+        result.current_images_succeeded > 0 or result.current_images_failed > 0
+    ):
+        lines.append("")
+        lines.append("*Обработано сейчас:*")
+        lines.append(f"├ ✅ Успешно: {result.current_images_succeeded}")
+        lines.append(f"└ ❌ С ошибками: {result.current_images_failed}")
 
     if result.errors_grouped:
         lines.append("")

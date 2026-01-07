@@ -46,21 +46,21 @@ async def handle_check_status(message: Message) -> None:
                 lambda: batch_service.check_and_download_results(drive_service),
             )
 
-            # Получаем общую статистику
+            # Получаем общую статистику и добавляем данные о текущей обработке
             overall_stats = await asyncio.get_event_loop().run_in_executor(
                 None,
                 batch_service.get_overall_statistics,
             )
 
+            # Переносим статистику текущей обработки в overall_stats
+            overall_stats.current_images_succeeded = result.current_images_succeeded
+            overall_stats.current_images_failed = result.current_images_failed
+            overall_stats.errors_grouped = result.errors_grouped
+
             await message.answer(
-                format_status_result(overall_stats),
+                format_status_result(overall_stats, show_current=True),
                 parse_mode="Markdown",
             )
-
-            if result.processed_jobs:
-                await message.answer(
-                    f"✅ Обработано {len(result.processed_jobs)} batch jobs",
-                )
 
         except Exception as e:
             logger.exception("Status check failed")

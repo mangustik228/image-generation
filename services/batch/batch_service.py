@@ -50,6 +50,10 @@ class StatusCheckResult:
     images_failed: int = 0
     images_pending: int = 0
 
+    # Статистика по изображениям, обработанным в текущем запросе
+    current_images_succeeded: int = 0
+    current_images_failed: int = 0
+
     errors_grouped: dict[str, int] = field(default_factory=dict)
     processed_jobs: list[str] = field(default_factory=list)
 
@@ -653,6 +657,12 @@ class BatchService:
                         result.jobs_failed += 1
                     elif state == "JOB_STATE_CANCELLED":
                         result.jobs_cancelled += 1
+
+                    # Считаем изображения, обработанные в этом job
+                    result.current_images_succeeded += len(
+                        job_result.get("output_files", [])
+                    )
+                    result.current_images_failed += len(job_result.get("errors", []))
 
                     for error in job_result.get("errors", []):
                         error_msg = error.get("error", "Unknown error")
