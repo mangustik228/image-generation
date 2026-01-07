@@ -685,7 +685,7 @@ class BatchService:
 
     def get_overall_statistics(self) -> StatusCheckResult:
         """
-        Получает общую статистику по всем batch jobs и изображениям.
+        Получает статистику по активным batch jobs (PENDING/RUNNING) и их изображениям.
 
         Returns:
             StatusCheckResult со статистикой
@@ -693,35 +693,30 @@ class BatchService:
         result = StatusCheckResult()
 
         with self._get_session() as session:
-            all_jobs = session.query(BatchJob).all()
-            result.total_jobs = len(all_jobs)
+            # Считаем только активные jobs (PENDING и RUNNING)
+            active_jobs = (
+                session.query(BatchJob)
+                .filter(BatchJob.status.in_(["PENDING", "RUNNING"]))
+                .all()
+            )
+            result.total_jobs = len(active_jobs)
 
-            for job in all_jobs:
+            active_job_ids = []
+            for job in active_jobs:
+                active_job_ids.append(job.id)
                 if job.status == "PENDING":
                     result.jobs_pending += 1
                 elif job.status == "RUNNING":
                     result.jobs_running += 1
-                elif job.status == "SUCCEEDED":
-                    result.jobs_succeeded += 1
-                elif job.status == "FAILED":
-                    result.jobs_failed += 1
-                elif job.status == "CANCELLED":
-                    result.jobs_cancelled += 1
 
-            all_images = session.query(BatchJobImage).all()
-            result.total_images = len(all_images)
-
-            for img in all_images:
-                if img.status == "SUCCEEDED":
-                    result.images_succeeded += 1
-                elif img.status == "FAILED":
-                    result.images_failed += 1
-                    if img.error_message:
-                        if img.error_message in result.errors_grouped:
-                            result.errors_grouped[img.error_message] += 1
-                        else:
-                            result.errors_grouped[img.error_message] = 1
-                else:
-                    result.images_pending += 1
+            # Считаем изображения только из активных jobs
+            if active_job_ids:
+                active_images = (
+                    session.query(BatchJobImage)
+                    .filter(BatchJobImage.batch_job_id.in_(active_job_ids))
+                    .all()
+                )
+                result.total_images = len(active_images)
+                result.images_pending = len(active_images)
 
         return result
