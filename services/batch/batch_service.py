@@ -319,7 +319,30 @@ class BatchService:
         job_name = batch_job.job_name
         logger.info(f"Проверяю статус: {job_name}")
 
-        job = self.client.batches.get(name=job_name)
+        try:
+            job = self.client.batches.get(name=job_name)
+        except Exception as e:
+            error_msg = str(e)
+            if "404" in error_msg or "NOT_FOUND" in error_msg:
+                logger.warning(
+                    f"Job {job_name} не найден в API (404). Помечаю как FAILED."
+                )
+                batch_job.status = "FAILED"
+                batch_job.error_message = (
+                    f"Job не найден в Gemini API (404): {error_msg}"
+                )
+                batch_job.completed_at = datetime.now(timezone.utc)
+                session.commit()
+                return {
+                    "job_name": job_name,
+                    "state": "JOB_STATE_FAILED",
+                    "state_ru": "Ошибка",
+                    "completed": True,
+                    "success": False,
+                    "output_files": [],
+                    "errors": [{"key": "api", "error": error_msg}],
+                }
+            raise
 
         state = str(job.state)
         if "." in state:
