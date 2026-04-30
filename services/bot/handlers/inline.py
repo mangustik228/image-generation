@@ -199,13 +199,10 @@ async def _handle_status(callback: CallbackQuery) -> None:
 
 
 async def _handle_publish(callback: CallbackQuery) -> None:
-    from slugify import slugify
-
     from models.models import BatchJobImage, get_session_maker
     from services.gateway import GatewayClient
     from services.google_sheets import GoogleSheetsService
-    from services.image_description import ImageDescriptionService
-    from services.sync import SyncService, extract_product_markdown
+    from services.sync import SyncService
 
     assert isinstance(callback.message, Message)
 
@@ -226,7 +223,6 @@ async def _handle_publish(callback: CallbackQuery) -> None:
                 folder_id=settings.google.drive_folder_id,
             )
             session_maker = get_session_maker(settings.database.url)
-            image_desc_service = ImageDescriptionService()
 
             sync_service = SyncService(
                 database_url=settings.database.url,
@@ -240,100 +236,6 @@ async def _handle_publish(callback: CallbackQuery) -> None:
                 f"Синхронизация: {result.requests_success} успешных, {result.requests_failed} ошибок"
             )
 
-            descriptions_generated = 0
-            for response_data in result.responses:
-                content = response_data.get("content", {})
-                model = content.get("model", "Unknown")
-                model_slug = slugify(model, lowercase=True)
-
-                markdown = extract_product_markdown(response_data)
-
-                with session_maker() as session:
-                    images = (
-                        session.query(BatchJobImage)
-                        .filter(BatchJobImage.status == "SUCCEEDED")
-                        .filter(BatchJobImage.result_file.isnot(None))
-                        .filter(BatchJobImage.published.is_(False))
-                        .all()
-                    )
-
-                    model_images = [
-                        img
-                        for img in images
-                        if slugify(img.model_name, lowercase=True) == model_slug
-                    ]
-
-                    if not model_images:
-                        continue
-
-                    images_without_desc = [
-                        img
-                        for img in model_images
-                        if not (img.title and img.description)
-                    ]
-
-                    if not images_without_desc:
-                        continue
-
-                    photos: list[bytes] = []
-                    image_ids: list[str] = []
-                    filenames: list[str] = []
-
-                    for img in images_without_desc:
-                        if not img.result_file:
-                            continue
-                        if not drive_service.check_file_exists(img.result_file):
-                            logger.warning(
-                                f"Файл {img.result_file} (id={img.id}, model={img.model_name}) не найден на Google Drive, пропускаем"
-                            )
-                            continue
-                        logger.info(
-                            f"Загружаем файл: model={img.model_name}, source={img.source_image_name}, "
-                            f"original_path={img.original_image_path}"
-                        )
-                        photo_bytes = drive_service.download_file(img.result_file)
-                        if photo_bytes:
-                            photos.append(photo_bytes)
-                            image_ids.append(img.id)
-                            filenames.append(f"{img.model_name}_{img.id}")
-
-                    if not photos:
-                        continue
-
-                    try:
-                        descriptions = await image_desc_service.generate_descriptions(
-                            photos=photos,
-                            markdown_content=markdown,
-                            filenames=filenames,
-                        )
-
-                        for i, desc in enumerate(descriptions):
-                            if i >= len(image_ids):
-                                break
-                            image_id = image_ids[i]
-                            img_record = (
-                                session.query(BatchJobImage)
-                                .filter_by(id=image_id)
-                                .first()
-                            )
-                            if img_record:
-                                img_record.alt = desc.get("alt", "")
-                                img_record.title = desc.get("title", "")
-                                img_record.description = desc.get("caption", "")
-                                descriptions_generated += 1
-
-                        session.commit()
-                        logger.info(f"✅ Описания для модели {model} сохранены")
-
-                    except Exception as e:
-                        logger.error(f"Ошибка генерации описаний для {model}: {e}")
-                        continue
-
-            if descriptions_generated > 0:
-                await callback.message.answer(
-                    f"🏷️ Сгенерировано {descriptions_generated} описаний"
-                )
-
             gateway_client = GatewayClient()
 
             with session_maker() as session:
@@ -341,8 +243,6 @@ async def _handle_publish(callback: CallbackQuery) -> None:
                     session.query(BatchJobImage)
                     .filter(BatchJobImage.status == "SUCCEEDED")
                     .filter(BatchJobImage.result_file.isnot(None))
-                    .filter(BatchJobImage.title.isnot(None))
-                    .filter(BatchJobImage.description.isnot(None))
                     .filter(BatchJobImage.published.is_(False))
                     .all()
                 )
@@ -382,9 +282,9 @@ async def _handle_publish(callback: CallbackQuery) -> None:
                             upload_result = await gateway_client.upload_image(
                                 image_data=photo_bytes,
                                 filename=img.get_cms_filename(),
-                                title=img.title or "Изображение без названия",
-                                description=img.alt,
-                                caption=img.description,
+                                title=img.model_name,
+                                description=img.model_name,
+                                caption=img.model_name,
                                 collection_path=img.get_collection_path(),
                             )
 
