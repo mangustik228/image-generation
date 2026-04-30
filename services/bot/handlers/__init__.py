@@ -1,10 +1,13 @@
 from aiogram import Router
 
-from .start import router as start_router
-from .parsing import router as parsing_router
 from .generation import router as generation_router
-from .status import router as status_router
+from .help import router as help_router
+from .inline import router as inline_router
+from .parsing import router as parsing_router
+from .prompt import router as prompt_router
 from .publish import router as publish_router
+from .start import router as start_router
+from .status import router as status_router
 
 
 def get_all_routers() -> list[Router]:
@@ -14,4 +17,7 @@ def get_all_routers() -> list[Router]:
         generation_router,
         status_router,
         publish_router,
+        prompt_router,
+        inline_router,
+        help_router,
     ]
