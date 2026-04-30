@@ -5,6 +5,7 @@
 
 import os
 
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -26,8 +27,27 @@ def authenticate():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             print("Обновляю токен...")
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except RefreshError as e:
+                if "invalid_grant" in str(e):
+                    print(
+                        "Токен недействителен (invalid_grant). Требуется повторная авторизация."
+                    )
+                    try:
+                        os.remove(TOKEN_FILE)
+                    except FileNotFoundError:
+                        pass
+                    creds = None
+                else:
+                    raise
         else:
+            if not os.path.exists(OAUTH_CREDENTIALS_FILE):
+                print(f"Ошибка: файл {OAUTH_CREDENTIALS_FILE} не найден!")
+                print("Скачайте OAuth credentials из Google Cloud Console")
+                return None
+
+        if creds is None:
             if not os.path.exists(OAUTH_CREDENTIALS_FILE):
                 print(f"Ошибка: файл {OAUTH_CREDENTIALS_FILE} не найден!")
                 print("Скачайте OAuth credentials из Google Cloud Console")
@@ -37,7 +57,6 @@ def authenticate():
             flow = InstalledAppFlow.from_client_secrets_file(
                 OAUTH_CREDENTIALS_FILE, SCOPES
             )
-            # Используем консольный режим, если браузер недоступен
             try:
                 creds = flow.run_local_server(port=0, open_browser=False)
             except Exception:
