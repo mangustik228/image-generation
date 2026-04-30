@@ -48,6 +48,12 @@ def format_status_result(result: StatusCheckResult, show_current: bool = False) 
             :10
         ]:
             error_short = error[:80] + "..." if len(error) > 80 else error
+            error_short = (
+                error_short.replace("_", "\\_")
+                .replace("*", "\\*")
+                .replace("`", "\\`")
+                .replace("[", "\\[")
+            )
             lines.append(f"• {error_short}: {count}")
 
     return "\n".join(lines)
