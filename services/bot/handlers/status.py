@@ -16,10 +16,6 @@ router = Router()
 @router.message(F.text == "📊 Проверить задания")
 async def handle_check_status(message: Message) -> None:
     user_id = message.from_user.id  # type: ignore
-    if user_id not in settings.telegram.authorized_users:
-        await message.answer("⛔ Доступ запрещён")
-        return
-
     if status_check_lock.locked():
         await message.answer("⏳ Проверка статусов уже запущена. Подождите завершения.")
         return

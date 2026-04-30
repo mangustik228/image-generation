@@ -2,8 +2,6 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from config import settings
-
 router = Router()
 
 HELP_TEXT = (
@@ -22,9 +20,4 @@ HELP_TEXT = (
 
 @router.message(Command("help"))
 async def cmd_help(message: Message) -> None:
-    user_id = message.from_user.id if message.from_user else None  # type: ignore
-    if user_id is None or user_id not in settings.telegram.authorized_users:
-        await message.answer("⛔ Доступ запрещён")
-        return
-
     await message.answer(HELP_TEXT, parse_mode="Markdown")

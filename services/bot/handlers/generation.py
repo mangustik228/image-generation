@@ -18,10 +18,6 @@ router = Router()
 @router.message(F.text == "🎨 Отправить на генерацию")
 async def handle_generation(message: Message) -> None:
     user_id = message.from_user.id  # type: ignore
-    if user_id not in settings.telegram.authorized_users:
-        await message.answer("⛔ Доступ запрещён")
-        return
-
     if generation_lock.locked():
         await message.answer("⏳ Генерация уже запущена. Подождите завершения.")
         return
@@ -81,9 +77,7 @@ async def handle_generation(message: Message) -> None:
                         )
 
                 if not tasks:
-                    await message.answer(
-                        "⚠️ Не удалось скачать ни одного изображения"
-                    )
+                    await message.answer("⚠️ Не удалось скачать ни одного изображения")
                     return
 
                 await message.answer(

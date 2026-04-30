@@ -18,10 +18,6 @@ router = Router()
 @router.message(F.text == "📤 Загрузить фотографии")
 async def handle_publish_images(message: Message) -> None:
     user_id = message.from_user.id  # type: ignore
-    if user_id not in settings.telegram.authorized_users:
-        await message.answer("⛔ Доступ запрещён")
-        return
-
     if publish_lock.locked():
         await message.answer("⏳ Публикация уже запущена. Подождите завершения.")
         return

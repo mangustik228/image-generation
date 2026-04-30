@@ -453,11 +453,6 @@ _ACTIONS = {
 
 @router.callback_query(F.data.startswith("action:"))
 async def handle_inline_action(callback: CallbackQuery) -> None:
-    user_id = callback.from_user.id
-    if user_id not in settings.telegram.authorized_users:
-        await callback.answer("⛔ Доступ запрещён", show_alert=True)
-        return
-
     action = callback.data.split(":", 1)[1]  # type: ignore
     handler = _ACTIONS.get(action)
     if handler is None:

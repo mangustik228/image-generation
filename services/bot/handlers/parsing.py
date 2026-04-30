@@ -14,10 +14,6 @@ router = Router()
 @router.message(F.text == "🔄 Обновить изображения")
 async def handle_update(message: Message) -> None:
     user_id = message.from_user.id  # type: ignore
-    if user_id not in settings.telegram.authorized_users:
-        await message.answer("⛔ Доступ запрещён")
-        return
-
     if parsing_lock.locked():
         await message.answer("⏳ Парсинг уже запущен. Подождите завершения.")
         return
