@@ -9,11 +9,19 @@ from aiogram.types import (
 def get_main_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🔄 Обновить изображения")],
-            [KeyboardButton(text="🎨 Отправить на генерацию")],
+            [
+                KeyboardButton(text="🎨 Отправить на генерацию"),
+                KeyboardButton(text="📝 Показать базовый промпт"),
+            ],
+            [
+                KeyboardButton(text="📤 Загрузить фотографии"),
+                KeyboardButton(text="✏️ Поменять базовый промпт"),
+            ],
+            [
+                KeyboardButton(text="🔄 Обновить изображения"),
+                KeyboardButton(text="📋 Предыдущие промпты"),
+            ],
             [KeyboardButton(text="📊 Проверить задания")],
-            [KeyboardButton(text="📤 Загрузить фотографии")],
-            [KeyboardButton(text="📝 Показать базовый промпт")],
         ],
         resize_keyboard=True,
     )

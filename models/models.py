@@ -36,6 +36,7 @@ class BatchJob(Base):
     result_file: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+
 class BatchJobImage(Base):
     """Отдельное изображение в batch job (для сопоставления результатов)."""
 
@@ -96,6 +97,21 @@ class BatchJobImage(Base):
         # Убираем trailing slash и берём путь без последнего сегмента
         path = self.page_url.rstrip("/")
         return "/".join(path.split("/")[:-1]) or None
+
+
+class BasePrompt(Base):
+    """История базовых промптов для генерации изображений."""
+
+    __tablename__ = "base_prompts"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid4())
+    )
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
 
 def get_engine(database_url: str):

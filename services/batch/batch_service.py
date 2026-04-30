@@ -14,12 +14,12 @@ from google.genai import types
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from models.models import BatchJob, BatchJobImage, get_session_maker, init_db
-
-BASE_PROMPT = (
-    "Фотографии должны выглядеть будто сфотографировано профессиональным фотографом с качественным светом на профессиональном оборудовании."
-    "На фотографии реальный объект, искажать геометрию нельзя."
-    "Изображение будет использоваться для каталога мебели на сайте производителе нестандартной офисной мебели."
+from models.models import (
+    BasePrompt,
+    BatchJob,
+    BatchJobImage,
+    get_session_maker,
+    init_db,
 )
 
 # Возможные статусы batch job
@@ -88,6 +88,46 @@ class BatchService:
     def _get_session(self) -> Session:
         return self._session_maker()
 
+    def get_active_prompt(self) -> str:
+        """Возвращает текст активного базового промпта из БД."""
+        with self._get_session() as session:
+            prompt = (
+                session.query(BasePrompt)
+                .filter(BasePrompt.is_active.is_(True))
+                .order_by(BasePrompt.created_at.desc())
+                .first()
+            )
+            if prompt:
+                return prompt.text
+            return ""
+
+    def set_active_prompt(self, text: str) -> BasePrompt:
+        """Добавляет новый промпт и делает его активным, деактивируя предыдущий."""
+        with self._get_session() as session:
+            session.query(BasePrompt).filter(BasePrompt.is_active.is_(True)).update(
+                {BasePrompt.is_active: False}
+            )
+            new_prompt = BasePrompt(text=text, is_active=True)
+            session.add(new_prompt)
+            session.commit()
+            session.refresh(new_prompt)
+            return new_prompt
+
+    def get_recent_prompts(
+        self, page: int = 1, page_size: int = 5
+    ) -> tuple[list[BasePrompt], int]:
+        """Возвращает страницу из истории промптов (новые первыми) и общее количество."""
+        with self._get_session() as session:
+            total = session.query(BasePrompt).count()
+            prompts = (
+                session.query(BasePrompt)
+                .order_by(BasePrompt.created_at.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+                .all()
+            )
+            return prompts, total
+
     def create_batch_job(self, tasks: list[ImageTask]) -> BatchJob:
         """
         Создаёт batch job из списка задач.
@@ -102,6 +142,7 @@ class BatchService:
             if not Path(task.image_path).exists():
                 raise FileNotFoundError(f"Файл не найден: {task.image_path}")
 
+        base_prompt = self.get_active_prompt()
         batch_key = str(uuid4())
         uploaded_files = []
 
@@ -122,7 +163,7 @@ class BatchService:
                 request_key = f"{batch_key}-{i}"
                 request_keys.append(request_key)
                 logger.debug(
-                    f"[{request_key}] Prompt: {task.custom_prompt + '. ' + BASE_PROMPT}"
+                    f"[{request_key}] Prompt: {task.custom_prompt + '. ' + base_prompt}"
                 )
                 request_data = {
                     "key": request_key,
@@ -130,7 +171,7 @@ class BatchService:
                         "contents": [
                             {
                                 "parts": [
-                                    {"text": task.custom_prompt + ". " + BASE_PROMPT},
+                                    {"text": task.custom_prompt + ". " + base_prompt},
                                     {
                                         "file_data": {
                                             "file_uri": uploaded_file.uri,
@@ -209,7 +250,7 @@ class BatchService:
                     order_number=task.order_number,
                     position=task.position,
                     page_url=task.page_url,
-                    prompt=task.custom_prompt + ". " + BASE_PROMPT,
+                    prompt=task.custom_prompt + ". " + base_prompt,
                 )
                 session.add(image_record)
 
