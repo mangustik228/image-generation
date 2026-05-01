@@ -48,9 +48,17 @@ class Parser:
                     result.extend(product_items)
                     stats.products_parsed += 1
                     stats.images_total += len(product_items)
+                except httpx.HTTPStatusError as e:
+                    stats.products_failed += 1
+                    error_msg = (
+                        f"Failed to parse product {product_url}: "
+                        f"HTTP {e.response.status_code} | body: {e.response.text[:500]}"
+                    )
+                    logger.error(error_msg)
+                    stats.errors.append(error_msg)
                 except Exception as e:
                     stats.products_failed += 1
-                    error_msg = f"Failed to parse product {product_url}: {e}"
+                    error_msg = f"Failed to parse product {product_url}: {type(e).__name__}: {e}"
                     logger.error(error_msg)
                     stats.errors.append(error_msg)
 
