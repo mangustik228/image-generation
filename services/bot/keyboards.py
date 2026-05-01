@@ -14,14 +14,13 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
                 KeyboardButton(text="📝 Показать базовый промпт"),
             ],
             [
-                KeyboardButton(text="📤 Загрузить фотографии"),
+                KeyboardButton(text="🔄 Обновить изображения"),
                 KeyboardButton(text="✏️ Поменять базовый промпт"),
             ],
             [
-                KeyboardButton(text="🔄 Обновить изображения"),
+                KeyboardButton(text="📊 Проверить задания"),
                 KeyboardButton(text="📋 Предыдущие промпты"),
             ],
-            [KeyboardButton(text="📊 Проверить задания")],
         ],
         resize_keyboard=True,
     )
@@ -47,7 +46,7 @@ def get_inline_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="📤 Загрузить фотографии", callback_data="action:publish"
+                    text="📤 Опубликовать изображения", callback_data="action:publish"
                 )
             ],
         ]

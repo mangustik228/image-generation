@@ -9,6 +9,7 @@ from services.bot.middleware import AuthMiddleware
 BOT_COMMANDS = [
     BotCommand(command="start", description="Запустить бота и показать меню"),
     BotCommand(command="help", description="Показать все команды"),
+    BotCommand(command="publish", description="Опубликовать изображения"),
 ]
 
 
