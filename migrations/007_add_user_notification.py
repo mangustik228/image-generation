@@ -3,10 +3,16 @@
 Используется для авто-уведомления Telegram-пользователя о завершении batch job.
 """
 
-from sqlalchemy import text
+import sys
+from pathlib import Path
 
-from config import settings
-from models.models import get_engine
+# Чтобы можно было запускать как `python migrations/007_add_user_notification.py`
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from sqlalchemy import text  # noqa: E402
+
+from config import settings  # noqa: E402
+from models.models import get_engine  # noqa: E402
 
 
 def upgrade(database_url: str):
@@ -19,7 +25,9 @@ def upgrade(database_url: str):
             )
         )
         conn.execute(
-            text("CREATE INDEX IF NOT EXISTS ix_batch_jobs_user_id ON batch_jobs(user_id)")
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_batch_jobs_user_id ON batch_jobs(user_id)"
+            )
         )
         conn.commit()
     print("✓ Добавлены колонки user_id и notified в batch_jobs")
