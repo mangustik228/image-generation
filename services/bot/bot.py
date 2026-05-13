@@ -1,8 +1,11 @@
+import asyncio
+
 from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 from loguru import logger
 
 from config import settings
+from services.bot.background import status_watcher
 from services.bot.handlers import get_all_routers
 from services.bot.middleware import AuthMiddleware
 
@@ -25,4 +28,13 @@ async def run_bot() -> None:
 
     await bot.set_my_commands(BOT_COMMANDS)
     logger.info("Starting bot...")
-    await dp.start_polling(bot)
+
+    watcher_task = asyncio.create_task(status_watcher(bot))
+    try:
+        await dp.start_polling(bot)
+    finally:
+        watcher_task.cancel()
+        try:
+            await watcher_task
+        except (asyncio.CancelledError, Exception):
+            pass

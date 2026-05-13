@@ -128,7 +128,9 @@ class BatchService:
             )
             return prompts, total
 
-    def create_batch_job(self, tasks: list[ImageTask]) -> BatchJob:
+    def create_batch_job(
+        self, tasks: list[ImageTask], user_id: int | None = None
+    ) -> BatchJob:
         """
         Создаёт batch job из списка задач.
 
@@ -233,6 +235,8 @@ class BatchService:
                 ],
                 model=self.model,
                 status="PENDING",
+                user_id=user_id,
+                notified=False,
             )
             session.add(batch_job)
             session.flush()
@@ -795,3 +799,60 @@ class BatchService:
                 result.images_pending = len(active_images)
 
         return result
+
+    def get_user_stats_for_job(self, job_id: str) -> dict:
+        """Возвращает статистику успехов/ошибок по изображениям конкретного job."""
+        with self._get_session() as session:
+            images = (
+                session.query(BatchJobImage)
+                .filter(BatchJobImage.batch_job_id == job_id)
+                .all()
+            )
+            succeeded = sum(1 for i in images if i.status == "SUCCEEDED")
+            failed = sum(1 for i in images if i.status == "FAILED")
+            return {
+                "total": len(images),
+                "succeeded": succeeded,
+                "failed": failed,
+            }
+
+    def pop_finished_unnotified_jobs(self) -> list[dict]:
+        """
+        Находит batch jobs, которые завершились (SUCCEEDED/FAILED/CANCELLED),
+        имеют user_id и ещё не были уведомлены. Помечает их как notified=True
+        и возвращает информацию для отправки уведомлений.
+        """
+        terminal = ("SUCCEEDED", "FAILED", "CANCELLED")
+        out: list[dict] = []
+        with self._get_session() as session:
+            jobs = (
+                session.query(BatchJob)
+                .filter(
+                    BatchJob.status.in_(terminal),
+                    BatchJob.notified.is_(False),
+                    BatchJob.user_id.isnot(None),
+                )
+                .all()
+            )
+            for job in jobs:
+                images = (
+                    session.query(BatchJobImage)
+                    .filter(BatchJobImage.batch_job_id == job.id)
+                    .all()
+                )
+                succeeded = sum(1 for i in images if i.status == "SUCCEEDED")
+                failed = sum(1 for i in images if i.status == "FAILED")
+                out.append(
+                    {
+                        "user_id": job.user_id,
+                        "job_name": job.job_name,
+                        "status": job.status,
+                        "error_message": job.error_message,
+                        "total_images": len(images),
+                        "succeeded": succeeded,
+                        "failed": failed,
+                    }
+                )
+                job.notified = True
+            session.commit()
+        return out

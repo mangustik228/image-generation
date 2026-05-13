@@ -2,7 +2,15 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, String, Text, create_engine
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    DateTime,
+    String,
+    Text,
+    create_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -35,6 +43,13 @@ class BatchJob(Base):
     )
     result_file: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Telegram user, который запустил генерацию (для авто-уведомлений)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, nullable=True, index=True
+    )
+    # Флаг — отправлено ли уведомление о завершении
+    notified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class BatchJobImage(Base):

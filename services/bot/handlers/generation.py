@@ -83,7 +83,7 @@ async def handle_generation(message: Message) -> None:
                 await message.answer(
                     f"📤 Создаю batch job для {len(tasks)} изображений..."
                 )
-                batch_job = batch_service.create_batch_job(tasks)
+                batch_job = batch_service.create_batch_job(tasks, user_id=user_id)
 
                 logger.info(f"Batch job created: {batch_job.job_name}")
                 await message.answer(
