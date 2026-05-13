@@ -110,9 +110,15 @@ class Parser:
         model = content.get("model", "")
         category = self._extract_category(data)
         for index, image in enumerate(content.get("gallery_images", []), 1):
+            image_path = self._pick_image_url(image)
+            if not image_path:
+                logger.warning(
+                    f"No image URL in gallery item for {product_url} (index={index})"
+                )
+                continue
             item = ParseResult(
                 model=model,
-                image_url=f"{settings.cdn.url}{image.get('full_jpeg', '')}",
+                image_url=f"{settings.cdn.url}{image_path}",
                 position=index,
                 category=category,
                 page_url=page_url,
@@ -120,6 +126,22 @@ class Parser:
             result.append(item)
         logger.debug(f"Parsed product, model: {model}, total images: {len(result)}")
         return result
+
+    @staticmethod
+    def _pick_image_url(image: dict) -> str:
+        """Выбирает URL изображения: srcset с width=1600 либо максимальный, иначе full_jpeg."""
+        srcset = image.get("srcset") or []
+        if srcset:
+            preferred = next(
+                (s for s in srcset if s.get("width") == 1600 and s.get("url")),
+                None,
+            )
+            if preferred:
+                return preferred["url"]
+            with_url = [s for s in srcset if s.get("url")]
+            if with_url:
+                return max(with_url, key=lambda s: s.get("width") or 0)["url"]
+        return image.get("full_jpeg", "") or ""
 
     def _extract_category(self, data: dict) -> str:
         json_ld = data.get("json_ld", {})
