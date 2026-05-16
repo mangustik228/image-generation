@@ -18,6 +18,8 @@ class ImageRecord:
     status: str
     position: str
     custom_prompt: str
+    load_characteristics: str
+    additional_image: str
     attempt_number: str
     url: str
     page_url: str
@@ -80,15 +82,15 @@ class GoogleSheetsService:
 
     def get_existing_urls(self) -> set[str]:
         """
-        Get all existing image URLs from 'изображения' sheet (column H).
+        Get all existing image URLs from 'изображения' sheet (column K).
         """
         worksheet = self.spreadsheet.worksheet(self.IMAGES_SHEET)
         all_values = worksheet.get_all_values()
 
         urls: set[str] = set()
         for row in all_values[1:]:
-            if len(row) >= 8:
-                url = row[7].strip()
+            if len(row) >= 10:
+                url = row[9].strip()
                 if url:
                     urls.add(url)
 
@@ -99,7 +101,9 @@ class GoogleSheetsService:
         """
         Write ParseResult items to 'изображения' sheet.
         Columns: A(model), B(order_number), C(category), D(status='Новое'),
-                 E(position), H(image_url)
+                 E(position), F(custom_prompt), G(Подгружать характеристики),
+                 H(дополнительное изображение), I(attempt_number),
+                 J(image_url), K(page_url)
 
         Returns the number of new items added.
         """
@@ -120,6 +124,8 @@ class GoogleSheetsService:
                 item.category,
                 "Новое",
                 str(item.position),
+                "",
+                "",
                 "",
                 0,
                 item.image_url,
@@ -142,7 +148,8 @@ class GoogleSheetsService:
         - Column F (Кастомный промпт) is filled
 
         Columns: A(Модель), B(Заказ), C(Категория), D(Статус),
-                 E(Порядковый номер), F(Кастомный промпт), G(№ попытки), H(url), I(page_url)
+                 E(Порядковый номер), F(Кастомный промпт), G(Подгружать характеристики),
+                 H(дополнительное изображение), I(№ попытки), J(url), K(page_url)
         """
         worksheet = self.spreadsheet.worksheet(self.IMAGES_SHEET)
         all_values = worksheet.get_all_values()
@@ -151,7 +158,7 @@ class GoogleSheetsService:
         records: list[ImageRecord] = []
 
         for row in all_values[1:]:
-            if len(row) < 8:
+            if len(row) < 6:
                 continue
 
             status = row[3].strip()
@@ -169,9 +176,11 @@ class GoogleSheetsService:
                 status=status,
                 position=row[4].strip(),
                 custom_prompt=custom_prompt,
-                attempt_number=row[6].strip() if len(row) > 6 else "",
-                url=row[7].strip() if len(row) > 7 else "",
-                page_url=row[8].strip() if len(row) > 8 else "",
+                load_characteristics=row[6].strip() if len(row) > 6 else "",
+                additional_image=row[7].strip() if len(row) > 7 else "",
+                attempt_number=row[8].strip() if len(row) > 8 else "",
+                url=row[9].strip() if len(row) > 9 else "",
+                page_url=row[10].strip() if len(row) > 10 else "",
             )
             records.append(record)
 
@@ -185,7 +194,7 @@ class GoogleSheetsService:
         Mark image as 'Готово' in 'изображения' sheet by its URL.
 
         Args:
-            image_url: URL of the image (column H)
+            image_url: URL of the image (column J)
 
         Returns:
             True if image was found and marked, False otherwise
@@ -194,8 +203,8 @@ class GoogleSheetsService:
         all_values = worksheet.get_all_values()
 
         for row_idx, row in enumerate(all_values[1:], start=2):
-            if len(row) >= 8:
-                url = row[7].strip()
+            if len(row) >= 10:
+                url = row[9].strip()
                 if url == image_url:
                     worksheet.update_cell(row_idx, 4, "Готово")
                     logger.info(f"Marked image as 'Готово': {image_url}")
@@ -224,8 +233,8 @@ class GoogleSheetsService:
         marked_count = 0
 
         for row_idx, row in enumerate(all_values[1:], start=2):
-            if len(row) >= 8:
-                url = row[7].strip()
+            if len(row) >= 10:
+                url = row[9].strip()
                 if url in urls_set:
                     worksheet.update_cell(row_idx, 4, "Готово")
                     marked_count += 1
