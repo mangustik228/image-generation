@@ -1,0 +1,103 @@
+{
+  "seo": {},
+  "url": "/products/conference-tables/standart/ks-217",
+  "json_ld": {},
+  "page_type": "product",
+  "content": {
+    "model": "КС-217",
+    "h1": "Стол переговоров «КС-217»",
+    "parent_url": "/products/conference-tables/standart/",
+    "production_time": 15,
+    "characteristics": [
+      {
+        "label": "Размер на фотографии",
+        "value": "2200×1200 мм"
+      },
+      {
+        "label": "Розетки",
+        "value": "не входят в стоимость"
+      },
+      {
+        "label": "Материал столешницы",
+        "value": "ЛДСП - FENIX - Графит",
+        "suggestion": {
+          "text": "Ультраматовое покрытие с приятным тактильным ощущением",
+          "url": ""
+        }
+      },
+      {
+        "label": "Кол-во человек",
+        "value": "8",
+        "suggestion": {
+          "text": "Актуально для стола на изображении"
+        }
+      },
+      {
+        "label": "Тип опор",
+        "value": "Г-образная с тумбой"
+      }
+    ],
+    "gallery_images": [],
+    "tabs": {
+      "characteristics": [
+        {
+          "title": "Столешница",
+          "characteristics": [
+            {
+              "label": "Размер",
+              "value": "2200×1200мм"
+            },
+            {
+              "label": "Материал столешницы",
+              "value": "ЛДСП - FENIX - Графит"
+            },
+            {
+              "label": "Форма",
+              "value": "Прямоугольная - Усложненная"
+            },
+            {
+              "label": "Рекомендуемое кол-во человек",
+              "value": "До 8 человек"
+            }
+          ]
+        },
+        {
+          "title": "Опоры",
+          "characteristics": [
+            {
+              "label": "Тип опор",
+              "value": "Г-образная  с тумбой - 2шт"
+            },
+            {
+              "label": "Дополнительный материал опоры",
+              "value": "ЛДСП - Титан"
+            },
+            {
+              "label": "Основной материал опоры",
+              "value": "Нержавеющая сталь"
+            }
+          ]
+        },
+        {
+          "title": "Декоративная вставка",
+          "characteristics": [
+            {
+              "label": "Размер элемента",
+              "value": "1240×240мм"
+            },
+            {
+              "label": "Материал",
+              "value": "Стекло непрозрачное - Черный 070М"
+            }
+          ]
+        }
+      ],
+      "description": ""
+    },
+    "preview_description": "",
+    "default_price": 311200,
+    "default_resume": [],
+    "product_type": "calculator",
+    "calculator": {}
+  }
+}
