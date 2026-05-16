@@ -70,6 +70,7 @@ class ImageTask:
     category: str = ""
     page_url: str = ""
     source_url: str = ""
+    additional_image_path: str = ""
 
 
 class BatchService:
@@ -155,32 +156,52 @@ class BatchService:
                     display_name=f"batch-image-{batch_key}-{i}",
                 ),
             )
-            uploaded_files.append((uploaded_file, task))
+            additional_uploaded = None
+            if task.additional_image_path and Path(task.additional_image_path).exists():
+                additional_uploaded = self.client.files.upload(
+                    file=str(Path(task.additional_image_path)),
+                    config=types.UploadFileConfig(
+                        display_name=f"batch-additional-{batch_key}-{i}",
+                    ),
+                )
+            uploaded_files.append((uploaded_file, additional_uploaded, task))
 
         jsonl_filename = f"batch_request_{batch_key}.jsonl"
         request_keys = []
 
         with open(jsonl_filename, "w") as f:
-            for i, (uploaded_file, task) in enumerate(uploaded_files):
+            for i, (uploaded_file, additional_uploaded, task) in enumerate(
+                uploaded_files
+            ):
                 request_key = f"{batch_key}-{i}"
                 request_keys.append(request_key)
                 logger.debug(
                     f"[{request_key}] Prompt: {task.custom_prompt + '. ' + base_prompt}"
                 )
+                parts = [
+                    {"text": task.custom_prompt + ". " + base_prompt},
+                    {
+                        "file_data": {
+                            "file_uri": uploaded_file.uri,
+                            "mime_type": uploaded_file.mime_type,
+                        }
+                    },
+                ]
+                if additional_uploaded is not None:
+                    parts.append(
+                        {
+                            "file_data": {
+                                "file_uri": additional_uploaded.uri,
+                                "mime_type": additional_uploaded.mime_type,
+                            }
+                        }
+                    )
                 request_data = {
                     "key": request_key,
                     "request": {
                         "contents": [
                             {
-                                "parts": [
-                                    {"text": task.custom_prompt + ". " + base_prompt},
-                                    {
-                                        "file_data": {
-                                            "file_uri": uploaded_file.uri,
-                                            "mime_type": uploaded_file.mime_type,
-                                        }
-                                    },
-                                ],
+                                "parts": parts,
                                 "role": "user",
                             }
                         ],
@@ -207,10 +228,14 @@ class BatchService:
             raise Exception("Референс JSONL нулевой")
 
         source_image_names = []
-        for uf, _ in uploaded_files:
+        for uf, add_uf, _ in uploaded_files:
             if uf.name is None:
                 raise Exception("Референс изображения нулевой")
             source_image_names.append(uf.name)
+            if add_uf is not None:
+                if add_uf.name is None:
+                    raise Exception("Референс дополнительного изображения нулевой")
+                source_image_names.append(add_uf.name)
 
         batch_job_response = self.client.batches.create(
             model=self.model,
@@ -241,7 +266,7 @@ class BatchService:
             session.add(batch_job)
             session.flush()
 
-            for i, ((uf, task), request_key) in enumerate(
+            for i, ((uf, add_uf, task), request_key) in enumerate(
                 zip(uploaded_files, request_keys)
             ):
                 image_record = BatchJobImage(

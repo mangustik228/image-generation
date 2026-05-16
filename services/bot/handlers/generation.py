@@ -134,6 +134,20 @@ async def handle_generation(message: Message) -> None:
                         else:
                             tasks_without_chars += 1
 
+                        additional_image_path = ""
+                        if image.additional_image:
+                            add_ext = Path(image.additional_image).suffix or ".jpg"
+                            add_local_path = tmp_path / f"image_{i}_additional{add_ext}"
+                            if await download_image(
+                                image.additional_image, add_local_path
+                            ):
+                                additional_image_path = str(add_local_path)
+                            else:
+                                logger.warning(
+                                    f"Failed to download additional image for {image.url}: "
+                                    f"{image.additional_image}"
+                                )
+
                         tasks.append(
                             ImageTask(
                                 image_path=str(local_path),
@@ -146,6 +160,7 @@ async def handle_generation(message: Message) -> None:
                                 category=image.category,
                                 page_url=image.page_url,
                                 source_url=image.url,
+                                additional_image_path=additional_image_path,
                             )
                         )
 
