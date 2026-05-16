@@ -2,6 +2,7 @@ import io
 import os
 from typing import Optional
 
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -40,7 +41,15 @@ class GoogleDriveService:
         if not creds.valid:
             if creds.expired and creds.refresh_token:
                 logger.info("Refreshing OAuth token...")
-                creds.refresh(Request())
+                try:
+                    creds.refresh(Request())
+                except RefreshError as e:
+                    if "invalid_grant" in str(e):
+                        raise RefreshError(
+                            "Google OAuth token is revoked or expired (invalid_grant). "
+                            "Delete token.json and re-run 'uv run auth_google.py'."
+                        ) from e
+                    raise
                 with open(token_path, "w") as token:
                     token.write(creds.to_json())
             else:
