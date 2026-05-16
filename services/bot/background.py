@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 
 from aiogram import Bot
+from google.auth.exceptions import RefreshError
 from loguru import logger
 
 from config import settings
@@ -77,8 +78,21 @@ async def _run_check_once(bot: Bot) -> None:
             finished = await loop.run_in_executor(
                 None, batch_service.pop_finished_unnotified_jobs
             )
+        except RefreshError as e:
+            logger.warning(f"Google OAuth token invalid in background check: {e}")
+            for user_id in settings.telegram.authorized_users:
+                try:
+                    await bot.send_message(
+                        user_id,
+                        "⚠️ Фоновая проверка заданий упала: токен Google Drive истёк.\n\n"
+                        "Нажмите *📊 Проверить задания* для повторной авторизации.",
+                        parse_mode="Markdown",
+                    )
+                except Exception as notify_err:
+                    logger.warning(f"Failed to notify user {user_id}: {notify_err}")
+            return
         except Exception as e:
-            # Не падаем — продолжим в следующий тик. invalid_grant и пр. логируем.
+            # Не падаем — продолжим в следующий тик.
             logger.exception(f"Background status check failed: {e}")
             return
 
@@ -100,9 +114,7 @@ async def _run_check_once(bot: Bot) -> None:
 
 async def status_watcher(bot: Bot) -> None:
     """Бесконечный цикл фоновой проверки."""
-    logger.info(
-        f"Status watcher started, interval = {CHECK_INTERVAL_SECONDS}s"
-    )
+    logger.info(f"Status watcher started, interval = {CHECK_INTERVAL_SECONDS}s")
     # Небольшая задержка перед первым тиком, чтобы бот успел подняться
     await asyncio.sleep(10)
     while True:
