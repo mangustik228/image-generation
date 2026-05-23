@@ -15,4 +15,5 @@ services:
     volumes:
       - ./data:/app/data
       - ./token.json:/app/token.json
+      - ./download_batch.py:/app/download_batch.py
 
